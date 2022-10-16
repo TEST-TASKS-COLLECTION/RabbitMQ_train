@@ -1,4 +1,4 @@
-# Learning RabbitMQ
+# Learning RabbitMQ: NAMED QUEUE
 
 ## Create a Network
 
