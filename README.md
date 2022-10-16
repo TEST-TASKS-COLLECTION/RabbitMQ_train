@@ -51,7 +51,16 @@
 
 - application that pushes messages into the queue
 
+## Consumer
+
+- receiving message from queue is kinda complex.
+- we'll need a callback function to a queue
+
+## Running the code
+
+- make the consumer wait
+- then make the publisher send
+
 ## Useful Commands
 
 - `rabbitmqctl list_queues` inside the container to see how many messages are in the queues along with their name
-
