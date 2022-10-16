@@ -11,5 +11,4 @@ COPY publisher.py .
 FROM build as dev
 ENV FLASK_APP=publisher.py
 ENV FLASK_DEBUG=1
-EXPOSE 8000
-# CMD flask run -h 0.0.0 -p 5000
+CMD flask run -h 0.0.0 -p 5000

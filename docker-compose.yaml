@@ -1,0 +1,62 @@
+version: '3.6'
+services:
+  rabbit-1:
+    # build: 
+    #   context: rabbitmq/
+    image: rabbitmq:management-alpine
+    container_name: '${RABBIT_HOST}'
+    hostname: '${RABBIT_HOST}'
+    
+    networks: 
+      - rabbits
+    ports:
+      - 8080:15672
+    env_file:
+      - .env
+    volumes:
+      - rabbitmq_data:/data
+
+  consumer:
+    build: 
+      context: applications/consumer/
+      target: build
+    container_name: consumer
+    tty: true
+    volumes:
+      - ./applications/consumer:/src
+    networks:
+      - rabbits
+    ports:
+      - 8001:5000
+    env_file:
+      - .env
+    depends_on:
+      - rabbit-1
+    restart: on-failure:10
+
+
+  publisher:
+    build: 
+      context: applications/publisher/
+      target: dev
+    container_name: publisher
+    volumes:
+      - ./applications/publisher/:/src
+    networks:
+      - rabbits
+    ports:
+      - 8000:5000
+    env_file:
+      - .env
+    depends_on:
+      - consumer
+      - rabbit-1
+    restart: on-failure:10
+
+networks:
+  rabbits:
+    driver: bridge
+    name: rabbits
+
+volumes:
+  rabbitmq_data:
