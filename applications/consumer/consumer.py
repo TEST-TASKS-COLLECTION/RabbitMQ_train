@@ -23,7 +23,7 @@ def main():
     
     # callback function to a queue
     def callback(ch, method, properties, body):
-        print(f"[x] Received {body}")
+        print(f"[x] Received {body.decode()}")
     
     # tell RabbitMQ to use the above function to receive messages from
 # our queue, ---QUEUE must exist though---
