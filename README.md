@@ -1,4 +1,4 @@
-# Learning RabbitMQ: NAMED QUEUE- SIMPLE COMPOSE
+# Learning RabbitMQ: NAMED QUEUE- SIMPLE DOCKER-COMPOSE
 
 ## Create a Network
 
