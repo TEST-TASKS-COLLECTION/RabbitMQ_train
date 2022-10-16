@@ -1,5 +1,9 @@
 # Learning RabbitMQ: NAMED QUEUE- SIMPLE DOCKER-COMPOSE
 
+## To Run
+
+- `docker-compose up`
+
 ## Create a Network
 
 - `docker network create rabbits` so that every instance that we run can talk to eachother
@@ -64,3 +68,4 @@
 ## Useful Commands
 
 - `rabbitmqctl list_queues` inside the container to see how many messages are in the queues along with their name
+
