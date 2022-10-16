@@ -1,6 +1,4 @@
-FROM rabbitmq
-
-RUN rabbitmq-plugins enable --offline rabbitmq_management
-# RUN echo management_agent.disable_metrics_collector = false > management_agent.disable_metrics_collector.conf 
-
-EXPOSE 15671 15672
+FROM rabbitmq:management-alpine
+RUN apt-get update
+RUN apt-get install -y curl 
+EXPOSE 4369 5671 5672 25672 15671 15672

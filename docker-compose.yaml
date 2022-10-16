@@ -15,6 +15,11 @@ services:
       - .env
     volumes:
       - rabbitmq_data:/data
+    # healthcheck:
+    #     test: ["CMD", "curl", "-f", "http://localhost:8080"]
+    #     interval: 30s
+    #     timeout: 10s
+    #     retries: 5
 
   consumer:
     build: 
@@ -48,9 +53,11 @@ services:
       - 8000:5000
     env_file:
       - .env
-    depends_on:
-      - consumer
-      - rabbit-1
+    # depends_on:
+    #   consumer:
+    #     condition: service_started
+    #   rabbit-1:
+    #     condition: service_healthy
     restart: on-failure:10
 
 networks:

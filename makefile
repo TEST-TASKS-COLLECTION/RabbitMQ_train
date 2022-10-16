@@ -15,3 +15,9 @@ build_con:
 
 consumer:
 	docker run -it -v ${PWD}/applications/consumer:/src/  --net rabbits --rm consumer sh
+
+remove: |
+	docker rmi -f $(docker images -aq)
+	docker rm $(docker ps -aq)
+	docker network prune
+	docker volume prune
