@@ -1,71 +1,41 @@
-# Learning RabbitMQ: NAMED QUEUE- SIMPLE DOCKER-COMPOSE
+# Learning RabbitMQ: WORK QUEUES- SIMPLE DOCKER-COMPOSE
 
 ## To Run
 
 - `docker-compose up`
 
-## Create a Network
+## Work Queue
 
-- `docker network create rabbits` so that every instance that we run can talk to eachother
+- Work Queue will be used to distribute time-consuming tasks among multiple workers.
+- The main idea behind Work Queues (aka: Task Queues) is to avoid doing a resource-intensive task immediately and having to wait for it to complete. Instead we shedule the task to be done later
+- We encapsulate a task as a message and send it to the queue.
+- A worker process running in the background will pop the tasks (from queue) and eventually execute the job. When you run many workers the tasks will be shared between them.
 
-## Run the Container
+- $\color{green}This \space concept \space is \space especially \space useful \space in \space web \space applications \space where \space it's \space impossible \space to \space handle \space a \space complex \space task \space during \space a \space short \space HTTP \space request \space window.$
 
-- `docker run -d --rm --net rabbits --hostname rabbit-1 --name rabbit-1 rabbitmq:3.8`
-  - `-d` run in detach mode
-  - `--rm` remove the container once the work is done to save disk space
-  - `--net rabbits` run on this network
-  - `--hostname` hostname of the container
-    - rabbitmq uses an `<identifier>@<hostname>` in order to talk to each other
-    - if we are running rabbitmq on something like azure, vms or ec2 instances we need to make sure that we know the hostname of those instances so that these rabbitmq instances can find eachother
-    - while running it on k8s its important to run it as a stateful set and not a deployment because deployment pods have random hostname
-  - `--name` name of the container
+- [more at](https://www.rabbitmq.com/tutorials/tutorial-two-python.html)
 
-### After the container is running
+## Round-robin dispatching
 
-- `4369/tcp, 5671-5672/tcp, 15691-15692/tcp, 25672/tcp   rabbit-1`
-  - if we're running in the cluster  we'll use this `4369`
-  - `5671-5672`  is the communication port and for application to consume the queue
-- `docker logs rabbit-1` to see that the container is up and running, and is healthy
+- If we have more than one workers, by default on average every consumer will get the same number of messages. This way of distributing messages is called round-robin
 
-## Inside the container
+## Message Acknowledgement
 
-- `docker exec -it rabbit-1 bash`
-- `rabbitmqctl` is cli tool that we can choose manage rabbitmq
-- `rabbitmq-plugins` a separate cli, we can enable, disable, list different types of plugin integrations for rabbitmq
-  - some useful plugins are:
-    1. management interface plugin
-    2. prometheus monitoring plugin
-  - `rabbitmq-plugins list` shows that we have different plugins but most of them aren't enabled by default
+- Previously, if our worker dies we'd lose any tasks but that's not what we want. What was happening there is that once RabbitMQ delivers message to the consumer it immediately marks it for deletion.
+- So in order to make sure a message is never lost, RabbitMQ supports message acknowledgements. An ack(nowledgement) is sent back by the consumer to tell RabbitMQ that a particular message had been received, processed and that RabbitMQ is free to delete it.
+- If a consumer dies(its channel is closed, connection is closed, or TCP connection is lost) without sending an ack, RabbitMQ will understand that a message wasn't processed fully and will re-queue it
+- If there are other consumers online at the same time, it will then quickly redeliver it to another consumer.
+- That way you can be sure that no message is lost, even if the workers occasionally die.
+- inside of callback function `ch.basic_ack(delivery_tag = method.delivery_tag)`
 
-## Management Plugin UI port
+## Durable
 
-- `docker rm -f rabbit-1`
-- `docker run -d --rm --net rabbits -p 8080:15672 --hostname rabbit-1 --name rabbit-1 rabbitmq:3.8`
-  - `15672` is the management plugin UI port that we can use to browse to the management instance over the browser
-  - `docker exec -it rabbit-1 bash`
-  - `rabbitmq-plugins enable rabbitmq_management` enables bunch of plugins
-- goto browser on `localhost:8080`
-  - login with default credentials **guest** and **guest**
-
-### Channels
-
-- Channels are virtual connections to a specific queue and this is important because when we write a program we'll be creating a connection to our rabbitmq instance and then we're going to be creating a channel which is virtual connection directly to a queue. So, we have to define a queue and then we can start putting messages into that queue
-
-## Producer
-
-- application that pushes messages into the queue
-
-## Consumer
-
-- receiving message from queue is kinda complex.
-- we'll need a callback function to a queue
-
-## Running the code
-
-- make the consumer wait
-- then make the publisher send
+- even if the RabbitMQ server stops we don't want to lose our tasks
+- `channel.queue_declare(queue='task_queue', durable=True)`
+  - RabbitMQ doesn't allow you to redefine an existing queue with different parameters and will return an error to any program that tries to do that. And that's why I didn't use `hello` there
 
 ## Useful Commands
 
 - `rabbitmqctl list_queues` inside the container to see how many messages are in the queues along with their name
-
+- `rabbitmqctl list_queues name messages_ready messages_unacknowledged` to see the name, ready message and the messages that are unacknowledged
+  - very useful when we have forgotten to put basic acknowledgement in our code which will result in more and more memory consumption

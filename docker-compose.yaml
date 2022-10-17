@@ -1,4 +1,4 @@
-version: '3.6'
+version: '3.7'
 services:
   rabbit-1:
     # build: 
@@ -16,29 +16,46 @@ services:
     volumes:
       - rabbitmq_data:/data
     # healthcheck:
-    #     test: ["CMD", "curl", "-f", "http://localhost:8080"]
+    #     test: ["CMD", "curl", "-f", "http://localhost:15672"]
     #     interval: 30s
     #     timeout: 10s
     #     retries: 5
 
-  consumer:
+  consumer-1:
     build: 
       context: applications/consumer/
       target: build
-    container_name: consumer
+    container_name: consumer-1
     tty: true
     volumes:
       - ./applications/consumer:/src
     networks:
       - rabbits
-    ports:
-      - 8001:5000
+    # ports:
+    #   - 8001:5000
     env_file:
       - .env
     depends_on:
       - rabbit-1
     restart: on-failure:10
 
+  consumer-2:
+    build: 
+      context: applications/consumer/
+      target: build
+    container_name: consumer-2
+    tty: true
+    volumes:
+      - ./applications/consumer:/src
+    networks:
+      - rabbits
+    # ports:
+    #   - 8002:5000
+    env_file:
+      - .env
+    depends_on:
+      - rabbit-1
+    restart: on-failure:10
 
   publisher:
     build: 
@@ -53,11 +70,8 @@ services:
       - 8000:5000
     env_file:
       - .env
-    # depends_on:
-    #   consumer:
-    #     condition: service_started
-    #   rabbit-1:
-    #     condition: service_healthy
+    depends_on:
+      - rabbit-1
     restart: on-failure:10
 
 networks:

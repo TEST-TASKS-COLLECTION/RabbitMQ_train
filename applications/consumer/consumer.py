@@ -2,6 +2,7 @@ import os
 import sys
 from dotenv import load_dotenv
 
+import time
 load_dotenv()
 
 from pika import BlockingConnection, ConnectionParameters
@@ -27,13 +28,20 @@ def main():
     
     # callback function to a queue
     def callback(ch, method, properties, body):
+        sleep_for = body.count(b'.')
+        time.sleep(sleep_for)
+        print("SLEPT FOR, ", sleep_for)
         print(f"[x] Received {body.decode()}")
+        
+        # send a proper acknowledgement from the worker, once
+        # we're done with a task, so even if it dies while working
+        # this task(unacknowledged msg) is gonna be redelivered
+        ch.basic_ack(delivery_tag = method.delivery_tag)
     
     # tell RabbitMQ to use the above function to receive messages from
 # our queue, ---QUEUE must exist though---
     channel.basic_consume(
         queue='hello',
-        auto_ack=False,
         on_message_callback=callback
     )
 

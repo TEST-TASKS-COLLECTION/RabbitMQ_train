@@ -1,5 +1,6 @@
-FROM rabbitmq:3-management
-RUN apt-get update
-RUN apt-get install -y curl 
+FROM rabbitmq:management-alpine
+
+RUN apk --no-cache add curl
+
 EXPOSE 4369 5671 5672 25672 15671 15672
 
