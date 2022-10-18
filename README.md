@@ -34,6 +34,19 @@
 - `channel.queue_declare(queue='task_queue', durable=True)`
   - RabbitMQ doesn't allow you to redefine an existing queue with different parameters and will return an error to any program that tries to do that. And that's why I didn't use `hello` there
 
+### Message Persistence
+
+- we can mark our messages as persistent by `properties=pika.BasicProperties(delivery_mode = pika.spec.PERSISTENT_DELIVERY_MODE))` when doing our publishing
+- this doesn't fully guarantee that a msg won't be lost. Although it'll tell RabbitMQ to save the msg to a disk, *there's still a short time window when RabbitMQ has accepted a message and hasn't saved it yet*
+- Also, RabbitMQ doesn't do fsync(2) for every message -- it may be just saved to cache and not really written to the disk
+
+## Fair Dispatch
+
+- RabbitMQ just dispatches a message when the message enters the queue. It doesn't look at the number of unacknowledged messages for a consumer. So a worker might be constantly busy and the other one does hardly any work.
+- To make sure that the messages are equally divided i.e message gets dispatched to a free worker when another is busy.
+- `channel.basic_qos(prefetch_count=1)` don't dispatch a new message to a worker until it has processed and acknowledged the previous one. Instead, it will dispatch it to the next worker that is not still busy
+- If all the workers are busy then the queue can fill up. We will want to keep an eye on that, and maybe add more workers, or use [message TTL](https://www.rabbitmq.com/ttl.html)
+
 ## Useful Commands
 
 - `rabbitmqctl list_queues` inside the container to see how many messages are in the queues along with their name

@@ -1,5 +1,8 @@
 import os 
 import sys
+
+import json
+
 from dotenv import load_dotenv
 
 import time
@@ -20,15 +23,16 @@ print("*"*20)
 def main():
     print(RABBIT_HOST, RABBIT_PORT, "in consumer main")
     connection = BlockingConnection(ConnectionParameters(
-                    host=RABBIT_HOST, port=RABBIT_PORT,
+                    host=RABBIT_HOST, port=RABBIT_PORT,  # type: ignore
                     ))
 
     channel = connection.channel()
-    channel.queue_declare(queue='hello')
+    channel.queue_declare(queue='task_queue', durable=True)
     
     # callback function to a queue
     def callback(ch, method, properties, body):
-        sleep_for = body.count(b'.')
+        # print(type(body), type(body.decode()))
+        sleep_for = json.loads(body.decode())['sleep']
         time.sleep(sleep_for)
         print("SLEPT FOR, ", sleep_for)
         print(f"[x] Received {body.decode()}")
@@ -37,11 +41,13 @@ def main():
         # we're done with a task, so even if it dies while working
         # this task(unacknowledged msg) is gonna be redelivered
         ch.basic_ack(delivery_tag = method.delivery_tag)
+
+    channel.basic_qos(prefetch_count=1)
     
     # tell RabbitMQ to use the above function to receive messages from
 # our queue, ---QUEUE must exist though---
     channel.basic_consume(
-        queue='hello',
+        queue='task_queue',
         on_message_callback=callback
     )
 
